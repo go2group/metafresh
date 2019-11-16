@@ -17,6 +17,7 @@ import org.kohsuke.github.*
 
 // Use Codefresh API to retrieve the GitHub context for the active user, then grab that token for GitHub API steps
 String gitToken =  './codefresh get contexts --type git.github $1 --decrypt -o json | ./jq-linux64 -r ".spec.data.auth.password"'.execute().text
+println "GitHub token output: " + gitToken
 GitHub github = new GitHubBuilder().withOAuthToken(gitToken).build()
 GHRepository repo = github.createRepository("TestRepoCreateViaAPI", "This is an API created repo", "https://terasology.org/", true)
 
