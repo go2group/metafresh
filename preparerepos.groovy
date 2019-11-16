@@ -1,6 +1,15 @@
-// For parsing YAML
+// Parse some YAML
 @Grab('org.yaml:snakeyaml:1.25')
 import org.yaml.snakeyaml.Yaml
+
+Yaml parser = new Yaml()
+
+String sourceYaml = new File("manifest.yml").text
+println "\nSource YAML: " + sourceYaml
+
+Map parsedYaml = (Map) parser.load(sourceYaml)
+println "Parsed YAML: " + parsedYaml
+println ""
 
 // For working with Git
 @GrabResolver(name = 'jcenter', root = 'http://jcenter.bintray.com/')
@@ -15,32 +24,55 @@ import org.ajoberstar.grgit.Grgit
 @Grab(group='org.kohsuke', module='github-api', version='1.99')
 import org.kohsuke.github.*
 
+// Where to get the quick start repos from
+def quickstartHome = "go2group"
+
 // Assume a GitHub token has been set as an env variable, use that for API work
 def env = System.getenv()
 String githubToken= env['GITHUB_TOKEN']
+String githubRepoHome = env['CF_REPO_OWNER']
 
+// Initialize interactions with GitHub using the given token
 GitHub github = new GitHubBuilder().withOAuthToken(githubToken).build()
-GHRepository repo = github.createRepository("TestRepoCreateViaAPI", "This is an API created repo", "https://terasology.org/", true)
 
-Yaml parser = new Yaml()
+// Figure out who we are. Assume either the user forked MetaFresh to self or an organization
+GHMyself activeGitHubUser = github.getMyself()
+println "Am thinking we're working with GitHub user : " + activeGitHubUser.login
+String activeGitHubUserString = activeGitHubUser.login
+boolean workingWithOrg = false
+GHOrganization targetGitHubOrg
+if (activeGitHubUserString.equalsIgnoreCase(githubRepoHome)) {
+    println "Active GitHub user on our credential matches the home of the MetaFresh repo, so that's where quickstarted repos will go"
+} else {
+    println "The active GitHub user on our credential doesn't match the home of the MetaFresh repo, so assuming it lives in an organization"
+    targetGitHubOrg = github.getOrganization(githubRepoHome)
+    println "Pulled up the target GitHub org, its name is: " + targetGitHubOrg.login
+    workingWithOrg = true
+}
 
-String sourceYaml = new File("manifest.yml").text
-println "\nSource YAML: " + sourceYaml
-
-Map parsedYaml = (Map) parser.load(sourceYaml)
-println "Parsed YAML: " + parsedYaml
-println ""
-
-def quickstartHome = "go2group"
-def quickstartTarget = "go2group" //TODO: Pass in as parameter instead based on the MetaFresh repo's user/org home
-
+// Go through the YAML tree and do repo stuff
 parsedYaml.each { quickStart ->
     println "Repos for quickstart '" + quickStart.key + "' are " + quickStart.value
     retrieveItem(quickStart.key, quickstartHome)
 
     quickStart.value.each {
         println "Processing request to duplicate quickstart '${quickStart.key}' to: " + it
-        addRemote(quickStart.key, it, "https://github.com/${quickstartTarget}/${it}.git")
+        def repoUrl = "https://github.com/${githubRepoHome}/${it}.git"
+        if (isUrlValid(repoUrl)) {
+            println "Looks like a repo already exists for $repoUrl so no need to create it via GitHub API"
+        } else {
+            println "Not seeing a repo yet for $repoUrl so going to create it via GitHub API"
+            if (workingWithOrg) {
+                println "We're working on creating a new repo for organization targetGitHubOrg.login that'll go to " + it
+                GHCreateRepositoryBuilder orgRepoBuilder = targetGitHubOrg.createRepository(it)
+                orgRepoBuilder.description("This is an API created org repo")
+                orgRepoBuilder.create()
+            } else {
+                println "We're working on creating a new repo for user " + activeGitHubUserString
+                GHRepository repo = github.createRepository(it, "This is an API created user repo", "", true)
+            }
+        }
+        addRemote(quickStart.key, it, repoUrl)
     }
     println ""
 }
