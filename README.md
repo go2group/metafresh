@@ -1,2 +1,3 @@
-# metafresh
+# MetaFresh
+
 Developer workspace and meta-pipeline for Codefresh
