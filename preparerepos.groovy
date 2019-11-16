@@ -16,9 +16,15 @@ import org.ajoberstar.grgit.Grgit
 import org.kohsuke.github.*
 
 // Use Codefresh API to retrieve the GitHub context for the active user, then grab that token for GitHub API steps
-String gitToken =  './codefresh get contexts --type git.github $1 --decrypt -o json | ./jq-linux64 -r ".spec.data.auth.password"'.execute().text
-println "GitHub token output: " + gitToken
-GitHub github = new GitHubBuilder().withOAuthToken(gitToken).build()
+String command1 = './codefresh get contexts --type git.github $1 --decrypt -o json'
+println "Command 1 was: " + command1
+String gitToken1 =  command1.execute().text
+println "Initial token piece: " + gitToken1
+String command2 = "./jq-linux64 -r '.spec.data.auth.password' $gitToken1"
+println "Command 2 was: " + command2
+String gitToken2 = command2.execute().text
+println "GitHub token output 2: " + gitToken2
+GitHub github = new GitHubBuilder().withOAuthToken(gitToken2).build()
 GHRepository repo = github.createRepository("TestRepoCreateViaAPI", "This is an API created repo", "https://terasology.org/", true)
 
 Yaml parser = new Yaml()
