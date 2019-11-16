@@ -15,23 +15,11 @@ import org.ajoberstar.grgit.Grgit
 @Grab(group='org.kohsuke', module='github-api', version='1.99')
 import org.kohsuke.github.*
 
-// Use Codefresh API to retrieve the GitHub context for the active user, then grab that token for GitHub API steps
-String command1 = './codefresh get contexts --type git.github $1 --decrypt -o json'
-println "Command 1 was: " + command1
+// Assume a GitHub token has been set as an env variable, use that for API work
+def env = System.getenv()
+String githubToken= env['GITHUB_TOKEN']
 
-def proc = command1.execute()
-def b = new StringBuffer()
-proc.consumeProcessErrorStream(b)
-
-println "Any errors from command 1? " + b.toString()
-
-String gitToken1 =  proc.text
-println "Initial token piece: " + gitToken1
-String command2 = "./jq-linux64 -r '.spec.data.auth.password' $gitToken1"
-println "Command 2 was: " + command2
-String gitToken2 = command2.execute().text
-println "GitHub token output 2: " + gitToken2
-GitHub github = new GitHubBuilder().withOAuthToken(gitToken2).build()
+GitHub github = new GitHubBuilder().withOAuthToken(githubToken).build()
 GHRepository repo = github.createRepository("TestRepoCreateViaAPI", "This is an API created repo", "https://terasology.org/", true)
 
 Yaml parser = new Yaml()
