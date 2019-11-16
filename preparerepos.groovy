@@ -11,6 +11,14 @@ import org.ajoberstar.grgit.Grgit
 @Grab(group='org.slf4j', module='slf4j-api', version='1.6.1')
 @Grab(group='org.slf4j', module='slf4j-nop', version='1.6.1')
 
+// For GitHub API
+@Grab(group='org.kohsuke', module='github-api', version='1.99')
+import org.kohsuke.github.*
+
+def gitToken =  "codefresh get contexts --type git.github \$1 --decrypt -o json | jq -r '.spec.data.auth.password'".execute().text
+GitHub github = new GitHubBuilder().withOAuthToken(gitToken).build()
+GHRepository repo = github.createRepository("TestRepoCreateViaAPI", "This is an API created repo", "https://terasology.org/", true)
+
 Yaml parser = new Yaml()
 
 String sourceYaml = new File("manifest.yml").text
