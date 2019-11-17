@@ -82,7 +82,7 @@ parsedYaml.each { quickStart ->
             softForkGit.push(remote: it)
 
             // Create the initial pipeline on Codefresh - TODO: Only on the first (or last?) use of the quickstart, otherwise just add Git Hooks
-            String cfPipelineCreate = "./codefresh create pipeline -f ${it}/codefresh.spec.yaml"
+            String cfPipelineCreate = "./codefresh create pipeline -f ${quickStart.key}/codefresh.spec.yml"
             println "Going to try creating a pipeline with the following command: " + cfPipelineCreate
             println "Result from execution: " + cfPipelineCreate.execute().text
         }
