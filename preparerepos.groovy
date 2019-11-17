@@ -84,7 +84,12 @@ parsedYaml.each { quickStart ->
             // Create the initial pipeline on Codefresh - TODO: Only on the first (or last?) use of the quickstart, otherwise just add Git Hooks
             String cfPipelineCreate = "./codefresh create pipeline -f ${quickStart.key}/codefresh.spec.yml"
             println "Going to try creating a pipeline with the following command: " + cfPipelineCreate
-            println "Result from execution: " + cfPipelineCreate.execute().text
+
+            def proc = cfPipelineCreate.execute()
+            def b = new StringBuffer()
+            proc.consumeProcessErrorStream(b)
+            println "Result from execution: " + proc.text
+            println "Possible error output: " + b.toString()
         }
 
     }
