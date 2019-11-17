@@ -1,6 +1,7 @@
 cf-quickstart-gradle-spring:
   - sampleapp1
-  #- sampleapp2
+  - sampleapp2
 cf-quickstart-go-web:
   - sampleapp3
-  #- sampleapp4
+  - sampleapp4
+  - sampleapp5
