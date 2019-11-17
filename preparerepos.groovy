@@ -29,10 +29,10 @@ def quickstartHome = "go2group"
 
 // Assume a GitHub token has been set as an env variable, use that for API work
 def env = System.getenv()
-String githubToken= env['GITHUB_TOKEN']
+String githubToken= env['GRGIT_USER']
 String githubRepoHome = env['CF_REPO_OWNER']
 
-// Initialize interactions with GitHub using the given token
+// Initialize interactions with GitHub using the given token - it is also used directly as an env var by GrGit
 GitHub github = new GitHubBuilder().withOAuthToken(githubToken).build()
 
 // Figure out who we are. Assume either the user forked MetaFresh to self or an organization
@@ -59,20 +59,29 @@ parsedYaml.each { quickStart ->
         println "Processing request to duplicate quickstart '${quickStart.key}' to: " + it
         def repoUrl = "https://github.com/${githubRepoHome}/${it}.git"
         if (isUrlValid(repoUrl)) {
+            // Nothing to do - assume that if the repo exists it is ready or the user will have to delete it to retry
             println "Looks like a repo already exists for $repoUrl so no need to create it via GitHub API"
         } else {
+            // If no repo exists yet we'll make a new remote for it in the quickstart workspace and attempt to push there (soft fork of sorts)
+            addRemote(quickStart.key, it, repoUrl)
             println "Not seeing a repo yet for $repoUrl so going to create it via GitHub API"
+            // Need to treat orgs vs users differently
             if (workingWithOrg) {
-                println "We're working on creating a new repo for organization targetGitHubOrg.login that'll go to " + it
+                println "We're working on creating a new repo for organization " + targetGitHubOrg.login + " that'll go to " + it
                 GHCreateRepositoryBuilder orgRepoBuilder = targetGitHubOrg.createRepository(it)
                 orgRepoBuilder.description("This is an API created org repo")
                 orgRepoBuilder.create()
             } else {
+                // TODO: Validate this scenario, update to non-deprecated variant
                 println "We're working on creating a new repo for user " + activeGitHubUserString
                 GHRepository repo = github.createRepository(it, "This is an API created user repo", "", true)
             }
+            // Now actually attempt to push to the new remote to create the soft fork
+            println "Going to try git pushing to the new remote $it from " + quickStart.key
+            def softForkGit = Grgit.open(dir: quickStart.key)
+            softForkGit.push(remote: it)
         }
-        addRemote(quickStart.key, it, repoUrl)
+
     }
     println ""
 }
