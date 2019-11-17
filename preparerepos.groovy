@@ -80,6 +80,9 @@ parsedYaml.each { quickStart ->
             println "Going to try git pushing to the new remote $it from " + quickStart.key
             def softForkGit = Grgit.open(dir: quickStart.key)
             softForkGit.push(remote: it)
+
+            // Create the initial pipeline on Codefresh - TODO: Only on the first (or last?) use of the quickstart, otherwise just add Git Hooks
+            String cfPipelineCreate = "codefresh create pipeline -f ${it}/codefresh.spec.yaml"
         }
 
     }
