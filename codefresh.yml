@@ -1,0 +1,35 @@
+version: "1.0"
+stages:
+  - "clone"
+  - "meta"
+steps:
+  main_clone:
+    type: "git-clone"
+    description: "Cloning main repository..."
+    repo: "go2group/metafresh"
+    revision: "${{CF_BRANCH}}"
+    stage: "clone"
+  workspace_info:
+    title: Preparing workspace
+    type: freestyle
+    stage: "clone"
+    arguments:
+      image: 'alpine:3.8'
+      commands:
+        - echo "Hello world"
+        - ls
+        - cat manifest.yml
+  prepare_repos:
+    title: Preparing desired repos
+    type: freestyle
+    stage: "meta"
+    arguments:
+      image: 'gradle:4.7.0-jdk8-alpine'
+      commands:
+        - wget https://github.com/codefresh-io/cli/releases/download/v0.35.0/codefresh-v0.35.0-alpine-x64.tar.gz
+        - tar -xvzf codefresh-v0.35.0-alpine-x64.tar.gz
+        - wget https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+        - chmod a+x jq-linux64
+        # Using GRGIT_USER here instead of something more generic like GITHUB_TOKEN as GrGit uses this name by default
+        - export GRGIT_USER=`./codefresh get contexts --type git.github $1 --decrypt -o json | ./jq-linux64 -r ".spec.data.auth.password"`
+        - ./groovyw preparerepos.groovy
