@@ -138,7 +138,7 @@ parsedYaml.each { quickStart ->
 
         // Create the initial pipeline on Codefresh - to simplify create vs replace we issue a delete call first. TODO: Update instead?
         String deleteCommand = "./codefresh delete pipeline -name ${quickStart.key}"
-        def deleteProc = cfPipelineCreate.execute()
+        def deleteProc = deleteCommand.execute()
         def deleteBuffer = new StringBuffer()
         deleteProc.consumeProcessErrorStream(deleteBuffer)
         println "Attempting to delete pipeline in case it exists already: " + deleteProc.text
