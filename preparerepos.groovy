@@ -84,7 +84,7 @@ parsedYaml.each { quickStart ->
     File targetPipelineSpec = new File(quickStart.key, pipelineSpecFilename)
     if (targetPipelineSpec.exists() && targetPipelineSpec.text.contains(pipelineOwnerToken)) {
         String pipelineSpecText = targetPipelineSpec.text
-        println "Got the following pipeline spec to work with: \n" + pipelineSpecText
+        //println "Got the following pipeline spec to work with: \n" + pipelineSpecText
 
         quickStart.value.each {
             println "Processing request to duplicate quickstart '${quickStart.key}' to: " + it
@@ -94,7 +94,7 @@ parsedYaml.each { quickStart ->
                 // Replace tokens in the pipeline spec with owner + repo - only does its thing once, only Git triggers vary after
                 pipelineSpecText = pipelineSpecText.replace(pipelineOwnerToken, targetOwner)
                 pipelineSpecText = pipelineSpecText.replace(pipelineRepoToken, it)
-                println "Did token replacement, pipeline spec is now:\n" + pipelineSpecText
+                //println "Did token replacement, pipeline spec is now:\n" + pipelineSpecText
             } else {
                 int lastVerifiedIndex = pipelineSpecText.lastIndexOf(pipelineVerifiedSnippet)
                 if (lastVerifiedIndex == -1) {
@@ -104,7 +104,7 @@ parsedYaml.each { quickStart ->
                     String addedTemplate = gitTriggerTemplate.replace(pipelineOwnerToken, targetOwner).replace(pipelineRepoToken, it)
                     String lastPart = pipelineSpecText.substring(lastVerifiedIndex + pipelineVerifiedSnippet.length())
                     pipelineSpecText = firstPart + addedTemplate + lastPart
-                    println "Added new Git Trigger section, spec is now:\n" + pipelineSpecText
+                    //println "Added new Git Trigger section, spec is now:\n" + pipelineSpecText
                 }
             }
 
@@ -128,6 +128,7 @@ parsedYaml.each { quickStart ->
                     println "We're working on creating a new repo for user " + activeGitHubUserString
                     GHRepository repo = github.createRepository(it, "This is an API created user repo", "", true)
                 }
+
                 // Now actually attempt to push to the new remote to create the soft fork
                 println "Going to try git pushing to the new remote $it from " + quickStart.key
                 def softForkGit = Grgit.open(dir: quickStart.key)
@@ -135,10 +136,13 @@ parsedYaml.each { quickStart ->
             }
         }
 
-        // Create the initial pipeline on Codefresh
+        // Create the initial pipeline on Codefresh - to simplify create vs replace we issue a delete call first. TODO: Update instead?
+        println "./codefresh delete pipeline -name ${quickStart.key}".execute()
+
         new File(quickStart.key, pipelineSpecFilename).text = pipelineSpecText
         String cfPipelineCreate = "./codefresh create pipeline -f ${quickStart.key}/${pipelineSpecFilename}"
         println "Going to try creating a pipeline with the following command: " + cfPipelineCreate
+        println "It will be using the following pipeline spec:\n" + pipelineSpecText
 
         // Execute the Codefresh pipeline create command and capture both standard and error output
         def proc = cfPipelineCreate.execute()
