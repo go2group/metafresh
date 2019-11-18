@@ -137,7 +137,8 @@ parsedYaml.each { quickStart ->
         }
 
         // Create the initial pipeline on Codefresh - to simplify create vs replace we issue a delete call first. TODO: Update instead?
-        String deleteCommand = "./codefresh delete pipeline -name ${quickStart.key}"
+        String deleteCommand = "./codefresh delete pipeline --name ${quickStart.key}"
+        println "Going to run the following command to delete the old version of that pipeline, if it exists: " + deleteCommand
         def deleteProc = deleteCommand.execute()
         def deleteBuffer = new StringBuffer()
         deleteProc.consumeProcessErrorStream(deleteBuffer)
